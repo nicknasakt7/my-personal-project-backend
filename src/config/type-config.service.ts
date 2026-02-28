@@ -7,7 +7,6 @@ export class TypeConfigService {
   constructor(
     private readonly configService: ConfigService<EnvConfigType, true>
   ) {}
-
   get<K extends keyof EnvConfigType>(key: K): EnvConfigType[K] {
     return this.configService.get(key, { infer: true });
   }
