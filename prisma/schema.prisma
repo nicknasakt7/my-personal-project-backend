@@ -1,6 +1,6 @@
 generator client {
   provider     = "prisma-client"
-  output       = "../src/generate/database/prisma"
+  output       = "../src/database/generate/database/prisma"
   moduleFormat = "cjs"
 }
 
@@ -9,6 +9,12 @@ datasource db {
 }
 
 //enum
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 enum RoleType {
   SUPER_ADMIN
   ADMIN
@@ -69,16 +75,6 @@ enum PositionName {
   DATABASE_ADMINISTRATOR
 }
 
-// POSITIONS
-model Position {
-  id           String       @id @default(uuid())
-  name         PositionName @unique
-  allowed_role RoleType
-  users        User[]
-
-  @@map("positions")
-}
-
 model User {
   id        String    @id @default(uuid())
   email     String    @unique @db.VarChar(150)
@@ -86,30 +82,31 @@ model User {
   firstName String    @map("first_name") @db.VarChar(100)
   lastName  String    @map("last_name") @db.VarChar(100)
   birthDate DateTime? @map("birth_date") @db.Date
+  gender    Gender
 
   profileImageUrl      String? @map("profile_image_url")
   profileImagePublicId String? @map("profile_image_public_id")
 
-  roleType RoleType @map("role_type")
+  roleType RoleType @default(EMPLOYEE) @map("role_type")
 
-  positionId String   @map("position_id")
-  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  position PositionName
 
-  level  EmploymentLevel
+  level  EmploymentLevel  @default(JUNIOR)
   status EmploymentStatus @default(ACTIVE)
 
-  createdById  String? @map("create_by_id")
-  createdBy    User?   @relation("UserCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById  String? @map("created_by_id")
+  createdBy    User?   @relation("UserCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdUsers User[]  @relation("UserCreator")
 
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-  assignedTasks   Task[]    @relation("TaskAssignee")
-  createdTasks    Task[]    @relation("TaskCreator")
-  createdProjects Project[] @relation("ProjectCreator")
+  createdProjects Project[]       @relation("ProjectCreator")
+  assignedTasks   Task[]          @relation("TaskAssignee")
+  createdTasks    Task[]          @relation("TaskCreator")
   comments        Comment[]
+  projectMembers  ProjectMember[]
 
-  @@index([positionId])
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
   @@index([createdById])
   @@map("users")
 }
@@ -120,15 +117,36 @@ model Project {
   description String
   status      ProjectStatus @default(ACTIVE)
 
-  createdById String @map("created_by_id")
-  createdBy   User   @relation("ProjectCreator", fields: [createdById], references: [id])
+  dueDate DateTime? @map("due_date") @db.Timestamptz()
 
-  tasks     Task[]
-  createdAt DateTime @default(now()) @map("created_at")
+  createdById String @map("created_by_id")
+  createdBy   User   @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  tasks          Task[]
+  projectMembers ProjectMember[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@index([createdById])
   @@map("projects")
+}
+
+model ProjectMember {
+  id String @id @default(uuid())
+
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
 }
 
 model Task {
@@ -140,14 +158,18 @@ model Task {
   assignToId String @map("assign_to_id")
   assignTo   User   @relation("TaskAssignee", fields: [assignToId], references: [id], onDelete: Cascade)
 
-  createdById String @map("crated_by_id")
+  createdById String @map("created_by_id")
   createdBy   User   @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   title       String
   description String?
 
-  priority TaskPriority
-  status   TaskStatus
+  priority TaskPriority @default(MEDIUM)
+  status   TaskStatus   @default(TODO)
+
+  dueDate DateTime? @map("due_date") @db.Timestamptz()
+
+  isPersonal Boolean @default(false) @map("is_personal")
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
