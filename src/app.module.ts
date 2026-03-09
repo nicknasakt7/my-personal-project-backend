@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { AuthModule } from './auth/auth.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -11,19 +11,25 @@ import { ProjectModule } from './project/project.module';
 import { TaskModule } from './task/task.module';
 import { CommentModule } from './comment/comment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { EmployeeModule } from './employee/employee.module';
+import { TransfromInterceptor } from './common/interceptors/transform-interceptor';
 
 @Module({
   imports: [
     ConfigModule,
     DatabaseModule,
     AuthModule,
-
+    EmployeeModule,
     SecurityModule,
     ProjectModule,
     TaskModule,
     CommentModule,
     DashboardModule
   ],
-  providers: [{ provide: APP_GUARD, useClass: AuthGuard }, HttpExceptionFilter]
+  providers: [
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_INTERCEPTOR, useClass: TransfromInterceptor },
+    HttpExceptionFilter
+  ]
 })
 export class AppModule {}

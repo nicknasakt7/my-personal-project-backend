@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 
 import { SecurityModule } from 'src/shared/security/security.module';
-import { EmployeeModule } from 'src/user/user.module';
+import { EmployeeModule } from 'src/employee/employee.module';
 
 @Module({
   imports: [EmployeeModule, SecurityModule],

@@ -5,12 +5,12 @@ import { BcryptService } from 'src/shared/security/services/bcrypt.service';
 import { User } from 'src/database/generate/database/prisma/client';
 import { TypeConfigService } from 'src/config/type-config.service';
 import { AuthTokenService } from 'src/shared/security/auth-token.service';
-import { UserService } from 'src/user/user.service';
+import { EmployeeService } from 'src/employee/employee.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userService: UserService,
+    private readonly employeeService: EmployeeService,
     private readonly bcryptService: BcryptService,
     private readonly authTokenService: AuthTokenService,
     private readonly typeConfigService: TypeConfigService
@@ -21,7 +21,7 @@ export class AuthService {
     user: Omit<User, 'password'>;
     expiresIn: number;
   }> {
-    const user = await this.userService.findbyEmail(loginDto.email);
+    const user = await this.employeeService.findbyEmail(loginDto.email);
 
     if (!user)
       throw new UnauthorizedException({

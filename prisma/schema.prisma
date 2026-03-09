@@ -40,9 +40,16 @@ enum ProjectStatus {
   CANCELED
 }
 
+enum ProjectMemberRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
 enum TaskStatus {
   TODO
   IN_PROGRESS
+  IN_REVIEW
   DONE
   CANCELED
 }
@@ -141,7 +148,8 @@ model ProjectMember {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  role      ProjectMemberRole @default(MEMBER)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz()
 
   @@unique([projectId, userId])
   @@index([projectId])
@@ -158,6 +166,8 @@ model Task {
   assignToId String @map("assign_to_id")
   assignTo   User   @relation("TaskAssignee", fields: [assignToId], references: [id], onDelete: Cascade)
 
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
+
   createdById String @map("created_by_id")
   createdBy   User   @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
@@ -166,14 +176,14 @@ model Task {
 
   priority TaskPriority @default(MEDIUM)
   status   TaskStatus   @default(TODO)
+  comments Comment[]
 
   dueDate DateTime? @map("due_date") @db.Timestamptz()
 
   isPersonal Boolean @default(false) @map("is_personal")
 
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-  comments  Comment[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@index([projectId])
   @@index([assignToId])

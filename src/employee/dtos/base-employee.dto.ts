@@ -1,12 +1,11 @@
 import { Type } from 'class-transformer';
 import {
-  IsAlphanumeric,
   IsDate,
   IsEmail,
   IsEnum,
   IsNotEmpty,
-  IsString,
-  MinLength
+  IsOptional,
+  IsString
 } from 'class-validator';
 import { Trim } from 'src/common/decorators/trim.decorator';
 import {
@@ -23,15 +22,6 @@ export class BaseEmployeeDto {
   @IsEmail()
   @Trim()
   email: string;
-
-  @MinLength(6, { message: 'Password must contain 6 characters' })
-  @IsAlphanumeric('en-US', {
-    message: 'Password cannot contaun ibly number and letter'
-  })
-  @IsString({ message: 'Password must be a string' })
-  @IsNotEmpty({ message: 'Password is required' })
-  @Trim()
-  password: string;
 
   @IsString({ message: 'First name must be a string' })
   @IsNotEmpty({ message: 'First name is required' })
@@ -54,8 +44,12 @@ export class BaseEmployeeDto {
   @IsNotEmpty({ message: 'Gender is required' })
   gender: Gender;
 
+  @IsOptional()
+  @IsString()
   profileImageUrl?: string;
 
+  @IsOptional()
+  @IsString()
   profileImagePublicId?: string;
 
   @IsEnum(RoleType, {

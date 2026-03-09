@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserResponseDto } from 'src/user/dtos/user-response.dto';
+import { EmployeeResponseDto } from 'src/employee/dtos/employee-response.dto';
 
 export class LoginResponseDto {
   @ApiProperty()
@@ -9,5 +9,5 @@ export class LoginResponseDto {
   expiresIn: number;
 
   @ApiProperty()
-  user: UserResponseDto;
+  user: EmployeeResponseDto;
 }
