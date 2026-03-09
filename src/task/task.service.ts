@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException
@@ -12,6 +13,8 @@ import {
   RoleType,
   TaskStatus
 } from 'src/database/generate/database/prisma/enums';
+import { taskSelect } from './select/task.select';
+import { CommentResponseDto } from 'src/comment/dtos/comment-response.dto';
 
 @Injectable()
 export class TaskService {
@@ -45,7 +48,36 @@ export class TaskService {
 
   async getAllTasks() {}
 
-  async getTaskDetail() {}
+  //getTaskDetail by admin and employee only own task
+  async getTaskDetail(
+    currentUserId: string,
+    role: RoleType,
+    taskId: string
+  ): Promise<ResponseTaskDto> {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      select: taskSelect
+    });
+    if (!task) {
+      throw new NotFoundException({
+        message: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+    if (role === RoleType.ADMIN || role === RoleType.SUPER_ADMIN) {
+      return task;
+    }
+    const canView =
+      task.createdById === currentUserId || task.assignToId === currentUserId;
+
+    if (!canView) {
+      throw new ForbiddenException({
+        message: 'You do not have permisstion to view this task',
+        code: 'TASK_FORBIDDEN'
+      });
+    }
+    return task;
+  }
 
   //UpdateTask
   async updateTask(
@@ -153,7 +185,26 @@ export class TaskService {
     });
   }
 
-  async getOverDueTask() {}
+  // async getOverDueTask() {
+  //   const tasks = await this.prisma.task.findMany({
+  //     where: {
+  //       dueDate: {
+  //         lt: new Date()
+  //       },
+  //       status: {
+  //         not: TaskStatus.DONE
+  //       }
+  //     },
+  //     select: taskSelect,
+  //     orderBy: { dueDate: 'desc' }
+  //   });
 
-  async getCommentByTask() {}
+  //   return tasks;
+  // }
+
+  // async getCommentByTask(
+  //   currentUseId: string,
+  //   role: RoleType,
+  //   taskId: string
+  // ): Promise<CommentResponseDto> {}
 }

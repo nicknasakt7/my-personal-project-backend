@@ -40,7 +40,8 @@ export class AuthService {
       });
     const accessToken = await this.authTokenService.sign({
       sub: user.id,
-      email: user.email
+      email: user.email,
+      roleType: user.roleType
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...rest } = user;

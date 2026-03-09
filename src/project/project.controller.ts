@@ -16,6 +16,8 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/types/jwt-payload.type';
 import { GetProjectsQueryDto } from './dtos/get-projects-query.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
+import { RoleType } from 'src/database/generate/database/prisma/enums';
+import { CurrentUserRole } from 'src/auth/decorators/current-user-role.decorator';
 
 @Controller('projects')
 export class ProjectController {
@@ -30,13 +32,15 @@ export class ProjectController {
 
   @Get()
   async getAllProjects(
+    @CurrentUser() user: JwtPayload,
+    @CurrentUserRole() role: RoleType,
     @Query() query: GetProjectsQueryDto
   ): Promise<ProjectResponseDto[]> {
-    return this.projectService.getAllProjects(query);
+    return this.projectService.getAllProjects(user.sub, role, query);
   }
 
   @Get(':id')
-  async getProductDetail(
+  async getProjectDetail(
     @Param('id') projectId: string
   ): Promise<ProjectResponseDto> {
     return this.projectService.getProjectDetail(projectId);
@@ -61,4 +65,6 @@ export class ProjectController {
   async deleteProject(@Param('id') projectId: string): Promise<void> {
     return this.projectService.deleteProject(projectId);
   }
+
+  async getOverdueProject() {}
 }

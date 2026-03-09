@@ -6,7 +6,8 @@ import { projectSelect } from './selects/project.select';
 import { GetProjectsQueryDto } from './dtos/get-projects-query.dto';
 import {
   Prisma,
-  ProjectStatus
+  ProjectStatus,
+  RoleType
 } from 'src/database/generate/database/prisma/client';
 import { UpdateProjectDto } from './dtos/update-project.dto';
 
@@ -39,11 +40,11 @@ export class ProjectService {
   //Get All Project and implement search page limit filter by
   // all ,Active, At Risk, Delayed,Completed,Canceled
   async getAllProjects(
+    currentUserId: string,
+    role: RoleType,
     query: GetProjectsQueryDto
   ): Promise<ProjectResponseDto[]> {
-    const { page = 1, limit = 10, search, status, createdBy } = query;
-
-    const skip = (page - 1) & 10;
+    const { month, year, search, status, createdBy } = query;
 
     const where: Prisma.ProjectWhereInput = {};
 
@@ -59,10 +60,26 @@ export class ProjectService {
         mode: 'insensitive'
       };
     }
+
+    if (role === RoleType.EMPLOYEE) {
+      where.projectMembers = {
+        some: {
+          userId: currentUserId
+        }
+      };
+    }
+
+    if (month && year) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1);
+
+      where.createdAt = {
+        gte: startDate,
+        lt: endDate
+      };
+    }
     const projects = await this.prisma.project.findMany({
       where,
-      skip,
-      take: limit,
       orderBy: {
         createdAt: 'desc'
       },

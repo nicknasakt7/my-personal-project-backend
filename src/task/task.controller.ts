@@ -5,15 +5,14 @@ import {
   Get,
   Param,
   Patch,
-  Post,
-  Query
+  Post
 } from '@nestjs/common';
 
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { CreateTaskDto } from './dtos/create-task.dto';
 import { TaskService } from './task.service';
 import type { JwtPayload } from 'src/auth/types/jwt-payload.type';
-import { GetTaskQueryDto } from './dtos/get-task-query.dto';
+
 import { UpdateTaskDto } from './dtos/update-task.dto';
 import { ResponseTaskDto } from './dtos/response-task.dto';
 import { CurrentUserRole } from 'src/auth/decorators/current-user-role.decorator';
@@ -31,17 +30,21 @@ export class TaskController {
     return this.taskService.createTask(user.sub, role, createTaskDto);
   }
 
-  @Get()
-  async getAllTasks(
-    @CurrentUser() user: JwtPayload,
-    @Query() query: GetTaskQueryDto
-  ): Promise<ResponseTaskDto> {
-    return this.taskService.getAllTasks(query);
-  }
+  // @Get()
+  // async getAllTasks(
+  //   @CurrentUser() user: JwtPayload,
+  //   @Query() query: GetTaskQueryDto
+  // ): Promise<ResponseTaskDto> {
+  //   return this.taskService.getAllTasks(query);
+  // }
 
   @Get(':id')
-  async getTaskDetail(@Param('id') taskId: string) {
-    return this.taskService.getTaskDetail(taskId);
+  async getTaskDetail(
+    @CurrentUser() user: JwtPayload,
+    @CurrentUserRole() role: RoleType,
+    @Param('id') taskId: string
+  ) {
+    return this.taskService.getTaskDetail(user.sub, role, taskId);
   }
 
   @Patch(':id')
@@ -77,9 +80,6 @@ export class TaskController {
   ): Promise<void> {
     return this.taskService.deleteTask(user.sub, role, taskId);
   }
-
-  @Get('overdue')
-  async getOverDueTask() {}
 
   @Get(':taskId/comments')
   async getCommentByTask() {}
