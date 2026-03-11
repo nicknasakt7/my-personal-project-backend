@@ -22,6 +22,7 @@ import { UpdateProjectDto } from './dtos/update-project.dto';
 import { RoleType } from 'src/database/generate/database/prisma/enums';
 import { CurrentUserRole } from 'src/auth/decorators/current-user-role.decorator';
 import { Roles } from 'src/auth/decorators/roles-decorator';
+import { ProjectStatsResponseDto } from './dtos/project-stat-response.dto';
 
 @Controller('projects')
 export class ProjectController {
@@ -43,6 +44,11 @@ export class ProjectController {
     @Query() query: GetProjectsQueryDto
   ): Promise<ProjectResponseDto[]> {
     return this.projectService.getAllProjects(user.sub, role, query);
+  }
+
+  @Get('stat')
+  async getProjectStats(): Promise<ProjectStatsResponseDto> {
+    return this.projectService.getProjectStats();
   }
 
   @Get(':id')

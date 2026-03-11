@@ -57,7 +57,7 @@ export class TaskController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
-    type: ResponseTaskDto,
+    type: TaskListResponseDto,
     excludeExtraneousValues: true
   })
   @Get()
@@ -131,21 +131,6 @@ export class TaskController {
     type: CommentResponseDto,
     excludeExtraneousValues: true
   })
-  @Get(':taskId/comments')
-  async getCommentByTask(
-    @CurrentUser() user: JwtPayload,
-    @CurrentUserRole() role: RoleType,
-    @Param('taskId', ParseUUIDPipe) taskId: string,
-    @Query() query: GetCommentsQueryDto
-  ): Promise<CommentPaginationDto> {
-    return this.taskService.getCommentByTask(user.sub, role, taskId, query);
-  }
-
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    type: CommentResponseDto,
-    excludeExtraneousValues: true
-  })
   @Post(':taskId/comments')
   async createComment(
     @CurrentUser() user: JwtPayload,
@@ -159,5 +144,20 @@ export class TaskController {
       taskId,
       createCommentDto
     );
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    type: CommentResponseDto,
+    excludeExtraneousValues: true
+  })
+  @Get(':taskId/comments')
+  async getCommentByTask(
+    @CurrentUser() user: JwtPayload,
+    @CurrentUserRole() role: RoleType,
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Query() query: GetCommentsQueryDto
+  ): Promise<CommentPaginationDto> {
+    return this.taskService.getCommentByTask(user.sub, role, taskId, query);
   }
 }

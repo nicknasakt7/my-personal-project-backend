@@ -63,6 +63,23 @@ export class TaskService {
       },
       select: taskDetailSelect
     });
+    if (createTaskDto.projectId) {
+      this.prisma.projectMember
+        .upsert({
+          where: {
+            projectId_userId: {
+              projectId: createTaskDto.projectId,
+              userId: assignToId
+            }
+          },
+          create: {
+            projectId: createTaskDto.projectId,
+            userId: assignToId
+          },
+          update: {}
+        })
+        .catch(console.error);
+    }
     return task;
   }
   //get task statcard
@@ -128,7 +145,7 @@ export class TaskService {
     ]);
 
     return {
-      data: tasks,
+      tasks: tasks,
       meta: {
         total,
         page,
@@ -188,8 +205,26 @@ export class TaskService {
       });
     }
 
-    if (role === RoleType.EMPLOYEE && task.assignToId !== currentUserId) {
-      throw new UnauthorizedException({
+    console.log(
+      ' task.assignToId !== currentUserId',
+      task.assignToId !== currentUserId
+    );
+    //employeeไม่สามารถupdate taskที่adminเป็นคนสร้างและassign to employee
+    // if (role === RoleType.EMPLOYEE && task.assignToId !== currentUserId) {
+    //   throw new ForbiddenException({
+    //     message: 'You cannot update this task',
+    //     code: 'TASK_FORBIDDEN'
+    //   });
+    // }
+    // console.log(
+    //   '      task.createdById !== currentUserId',
+    //   task.createdById !== currentUserId
+    // );
+    // console.log(' task.isPersonal', task.isPersonal);
+
+    //employeeไม่สามารถupdate taskคนอื่นได้
+    if (role === RoleType.EMPLOYEE && task.createdById !== currentUserId) {
+      throw new ForbiddenException({
         message: 'You cannot update this task',
         code: 'TASK_FORBIDDEN'
       });

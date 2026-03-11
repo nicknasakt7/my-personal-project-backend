@@ -1,6 +1,7 @@
 import {
   Body,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException
@@ -12,7 +13,12 @@ import { PrismaService } from 'src/database/prisma.service';
 
 import { PrismaClientKnownRequestError } from 'src/database/generate/database/prisma/internal/prismaNamespace';
 import { BcryptService } from 'src/shared/security/services/bcrypt.service';
-import { Prisma, User } from 'src/database/generate/database/prisma/client';
+import {
+  PositionName,
+  Prisma,
+  RoleType,
+  User
+} from 'src/database/generate/database/prisma/client';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 import { GetEmployeeQueryDto } from './dtos/get-employee-query.dto';
 import { EmployeeResponseDto } from './dtos/employee-response.dto';
@@ -28,8 +34,35 @@ export class EmployeeService {
 
   //Create Admin by super admin
   async registerAdmin(
+    role: RoleType,
     createEmployeeDto: CreateEmployeeDto
   ): Promise<EmployeeResponseDto> {
+    const { roleType, position } = createEmployeeDto;
+
+    const ADMIN_POSITIONS: PositionName[] = [
+      PositionName.ENGINEERING_MANAGER,
+      PositionName.PRODUCT_MANAGER,
+      PositionName.PROJECT_MANAGER,
+      PositionName.SCRUM_MASTER
+    ];
+
+    // SUPER_ADMIN เท่านั้นสร้าง ADMIN ได้
+    if (roleType === RoleType.ADMIN) {
+      if (role !== RoleType.SUPER_ADMIN) {
+        throw new ForbiddenException('Only SUPER_ADMIN can create ADMIN');
+      }
+      if (!ADMIN_POSITIONS.includes(position)) {
+        throw new ForbiddenException({
+          message: 'ADMIN position must be manager or scrum masster'
+        });
+      }
+    }
+
+    // ADMIN เท่านั้นสร้าง EMPLOYEE ได้
+    if (roleType === RoleType.EMPLOYEE && role !== RoleType.ADMIN) {
+      throw new ForbiddenException('Only ADMIN can create EMPLOYEE');
+    }
+
     const hashedPassword = await this.bcryptService.hash(
       createEmployeeDto.password
     );

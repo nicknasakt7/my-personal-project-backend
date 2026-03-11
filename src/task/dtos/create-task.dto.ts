@@ -47,12 +47,12 @@ export class CreateTaskDto {
   isPersonal: boolean;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @Trim()
   assignToId: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @Trim()
   projectId: string | null;
 }

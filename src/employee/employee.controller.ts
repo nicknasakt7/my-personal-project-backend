@@ -28,6 +28,8 @@ import { UpdateEmployeeDto } from './dtos/employee-update.dto.';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 
 import { Roles } from 'src/auth/decorators/roles-decorator';
+import { CurrentUserRole } from 'src/auth/decorators/current-user-role.decorator';
+import { RoleType } from 'src/database/generate/database/prisma/enums';
 
 @Controller('employees')
 export class EmployeeController {
@@ -41,9 +43,10 @@ export class EmployeeController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Post()
   async registerAdmin(
+    @CurrentUserRole() role: RoleType,
     @Body() createEmployeeDto: CreateEmployeeDto
   ): Promise<EmployeeResponseDto> {
-    return this.employeeService.registerAdmin(createEmployeeDto);
+    return this.employeeService.registerAdmin(role, createEmployeeDto);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')

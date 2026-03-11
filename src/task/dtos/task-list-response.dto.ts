@@ -1,10 +1,11 @@
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 import { ResponseTaskDto } from './response-task.dto';
 
 @Exclude()
 export class TaskListResponseDto {
   @Expose()
-  data: ResponseTaskDto[];
+  @Type(() => ResponseTaskDto)
+  tasks: ResponseTaskDto[];
 
   @Expose()
   meta: {

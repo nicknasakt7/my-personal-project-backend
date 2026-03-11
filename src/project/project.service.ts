@@ -14,6 +14,7 @@ import {
   RoleType
 } from 'src/database/generate/database/prisma/client';
 import { UpdateProjectDto } from './dtos/update-project.dto';
+import { ProjectStatsResponseDto } from './dtos/project-stat-response.dto';
 
 @Injectable()
 export class ProjectService {
@@ -95,7 +96,7 @@ export class ProjectService {
   }
 
   //get project stats card and calc
-  async getProjectStats() {
+  async getProjectStats(): Promise<ProjectStatsResponseDto> {
     const [total, pending, completed, overdue] = await Promise.all([
       this.prisma.project.count(),
       this.prisma.project.count({
