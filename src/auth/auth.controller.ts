@@ -1,19 +1,34 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  SerializeOptions,
+  UseInterceptors
+} from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 
 import { AuthService } from './auth.service';
-import { UserWithoutPassword } from 'src/employee/types/user.type';
+
+import { Public } from './decorators/public.decorator';
+import { LoginResponseDto } from './dtos/login-response.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: LoginResponseDto, excludeExtraneousValues: true })
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  login(@Body() loginDto: LoginDto): Promise<{
-    accessToken: string;
-    user: UserWithoutPassword;
-    expiresIn: number;
-  }> {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
+    const data = await this.authService.login(loginDto);
+
+    console.log('data', data);
+
+    return data;
   }
 }

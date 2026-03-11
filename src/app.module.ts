@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { AuthGuard } from './auth/guards/auth.guard';
+
 import { AuthModule } from './auth/auth.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -12,7 +11,10 @@ import { TaskModule } from './task/task.module';
 import { CommentModule } from './comment/comment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployeeModule } from './employee/employee.module';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { TransfromInterceptor } from './common/interceptors/transform-interceptor';
+import { AuthGuard } from './auth/guards/auth.guard';
+import { RoleGuard } from './auth/guards/role.guard';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { TransfromInterceptor } from './common/interceptors/transform-intercepto
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RoleGuard },
     { provide: APP_INTERCEPTOR, useClass: TransfromInterceptor },
     HttpExceptionFilter
   ]

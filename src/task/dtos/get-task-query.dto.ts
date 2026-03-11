@@ -8,6 +8,6 @@ export class GetTaskQueryDto {
   page?: number;
   limit?: number;
   status?: TaskStatus;
-  priorrity?: TaskPriority;
+  priority?: TaskPriority;
   assignTo?: string;
 }

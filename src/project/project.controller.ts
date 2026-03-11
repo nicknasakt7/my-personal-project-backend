@@ -3,7 +3,10 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query
@@ -18,11 +21,14 @@ import { GetProjectsQueryDto } from './dtos/get-projects-query.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
 import { RoleType } from 'src/database/generate/database/prisma/enums';
 import { CurrentUserRole } from 'src/auth/decorators/current-user-role.decorator';
+import { Roles } from 'src/auth/decorators/roles-decorator';
 
 @Controller('projects')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
+
   @Post()
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async createProject(
     @CurrentUser() user: JwtPayload,
     @Body() createProjectDto: CreateProjectDto
@@ -41,30 +47,39 @@ export class ProjectController {
 
   @Get(':id')
   async getProjectDetail(
-    @Param('id') projectId: string
+    @CurrentUser() user: JwtPayload,
+    @CurrentUserRole() role: RoleType,
+    @Param('id', ParseUUIDPipe) projectId: string
   ): Promise<ProjectResponseDto> {
-    return this.projectService.getProjectDetail(projectId);
+    return this.projectService.getProjectDetail(user.sub, role, projectId);
   }
 
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id')
   async updateProject(
-    @Param('id') projectId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) projectId: string,
     @Body() updateProjectDto: UpdateProjectDto
   ): Promise<ProjectResponseDto> {
-    return this.projectService.updateProject(projectId, updateProjectDto);
+    return this.projectService.updateProject(
+      user.sub,
+      projectId,
+      updateProjectDto
+    );
   }
 
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id/status')
   async cancelProject(
-    @Param('id') projectId: string
+    @Param('id', ParseUUIDPipe) projectId: string
   ): Promise<ProjectResponseDto> {
     return this.projectService.cancelProject(projectId);
   }
 
+  @Roles('SUPER_ADMIN')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  async deleteProject(@Param('id') projectId: string): Promise<void> {
-    return this.projectService.deleteProject(projectId);
+  async deleteProject(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.projectService.deleteProject(id);
   }
-
-  async getOverdueProject() {}
 }

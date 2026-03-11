@@ -2,10 +2,11 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 
 import { BcryptService } from 'src/shared/security/services/bcrypt.service';
-import { User } from 'src/database/generate/database/prisma/client';
+
 import { TypeConfigService } from 'src/config/type-config.service';
 import { AuthTokenService } from 'src/shared/security/auth-token.service';
 import { EmployeeService } from 'src/employee/employee.service';
+import { LoginResponseDto } from './dtos/login-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,13 +17,10 @@ export class AuthService {
     private readonly typeConfigService: TypeConfigService
   ) {}
 
-  async login(loginDto: LoginDto): Promise<{
-    accessToken: string;
-    user: Omit<User, 'password'>;
-    expiresIn: number;
-  }> {
-    const user = await this.employeeService.findbyEmail(loginDto.email);
-
+  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+    console.log('STEP 1');
+    const user = await this.employeeService.findByEmail(loginDto.email);
+    console.log('STEP 2', user?.email);
     if (!user)
       throw new UnauthorizedException({
         message: 'The provided email or password is incorrect',
@@ -33,22 +31,27 @@ export class AuthService {
       loginDto.password,
       user.password
     );
+    console.log('STEP 3', isMatch);
     if (!isMatch)
       throw new UnauthorizedException({
         message: 'The provided email or password is incorrect',
         code: 'INVALID_CREDENTIALS'
       });
-    const accessToken = await this.authTokenService.sign({
+    const payload = {
       sub: user.id,
       email: user.email,
       roleType: user.roleType
-    });
+    };
+    const accessToken = await this.authTokenService.sign(payload);
+    console.log('STEP 4 TOKEN CREATED');
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...rest } = user;
-    return {
+
+    const response: LoginResponseDto = {
       accessToken,
       user: rest,
       expiresIn: this.typeConfigService.get('JWT_EXPIRES_IN')
     };
+    return response;
   }
 }

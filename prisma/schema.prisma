@@ -111,6 +111,8 @@ model User {
   comments        Comment[]
   projectMembers  ProjectMember[]
 
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
@@ -131,6 +133,8 @@ model Project {
 
   tasks          Task[]
   projectMembers ProjectMember[]
+
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
@@ -188,6 +192,7 @@ model Task {
   @@index([projectId])
   @@index([assignToId])
   @@index([createdById])
+  @@index([deletedAt])
   @@map("tasks")
 }
 
@@ -201,6 +206,8 @@ model Comment {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   content String
+
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()

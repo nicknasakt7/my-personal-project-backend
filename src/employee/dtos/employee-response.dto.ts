@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
+
 import {
   EmploymentLevel,
   EmploymentStatus,
@@ -61,4 +62,18 @@ export class EmployeeResponseDto {
   @Expose()
   @ApiProperty()
   updatedAt: Date;
+}
+
+@Exclude()
+export class GetAllEmployeeResponseDto {
+  @Expose()
+  @Type(() => EmployeeResponseDto)
+  employees: EmployeeResponseDto[];
+
+  @Expose()
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+  };
 }

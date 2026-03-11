@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { ProjectResponseDto } from './dtos/project-response.dto';
 import { PrismaService } from 'src/database/prisma.service';
@@ -51,14 +55,16 @@ export class ProjectService {
     if (status) {
       where.status = status;
     }
-    if (createdBy) {
-      where.createdById = createdBy;
-    }
+
     if (search) {
       where.title = {
         contains: search,
         mode: 'insensitive'
       };
+    }
+
+    if (createdBy === 'me') {
+      where.createdById = currentUserId;
     }
 
     if (role === RoleType.EMPLOYEE) {
@@ -88,35 +94,83 @@ export class ProjectService {
     return projects;
   }
 
+  //get project stats card and calc
+  async getProjectStats() {
+    const [total, pending, completed, overdue] = await Promise.all([
+      this.prisma.project.count(),
+      this.prisma.project.count({
+        where: { status: ProjectStatus.ACTIVE }
+      }),
+      this.prisma.project.count({
+        where: { status: ProjectStatus.COMPLETED }
+      }),
+      this.prisma.project.count({
+        where: {
+          dueDate: { lt: new Date() },
+          status: { not: ProjectStatus.COMPLETED }
+        }
+      })
+    ]);
+    return {
+      total,
+      pending,
+      completed,
+      overdue
+    };
+  }
+
   //Get project detail for all
-  async getProjectDetail(projectId: string): Promise<ProjectResponseDto> {
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
+  async getProjectDetail(
+    currentUserId: string,
+    role: RoleType,
+    projectId: string
+  ): Promise<ProjectResponseDto> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, deletedAt: null },
+
       select: projectSelect
     });
-    if (!project) {
-      throw new NotFoundException('Project not found');
+    if (!project)
+      throw new NotFoundException({
+        message: 'Project not found',
+        code: 'Project_NOT_FOUND'
+      });
+    if (role === RoleType.EMPLOYEE) {
+      const isMember = project.projectMembers.some(
+        (m) => m.userId === currentUserId
+      );
+
+      if (!isMember) {
+        throw new ForbiddenException({
+          message: 'Access denied',
+          code: 'ACCESS_DENIED'
+        });
+      }
     }
     return project;
   }
 
   //Update project for admin
   async updateProject(
+    currentUserId: string,
     projectId: string,
     updateProjectDto: UpdateProjectDto
   ): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.update({
-      where: { id: projectId },
+      where: { id: projectId, deletedAt: null },
       data: updateProjectDto,
       select: projectSelect
     });
+    if (project.createdById !== currentUserId) {
+      throw new ForbiddenException();
+    }
     return project;
   }
 
   //cancel project by admin
   async cancelProject(projectId: string): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.update({
-      where: { id: projectId },
+      where: { id: projectId, deletedAt: null },
       data: {
         status: ProjectStatus.CANCELED
       },
@@ -127,8 +181,36 @@ export class ProjectService {
 
   //delete project by admin
   async deleteProject(projectId: string): Promise<void> {
-    await this.prisma.project.delete({
-      where: { id: projectId }
+    const project = await this.prisma.project.findFirst({
+      where: {
+        id: projectId,
+        deletedAt: null
+      }
+    });
+
+    if (!project) {
+      throw new NotFoundException({
+        message: 'Project not found',
+        code: 'Project_NOT_FOUND'
+      });
+    }
+
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: {
+        deletedAt: new Date()
+      }
+    });
+  }
+
+  // เอาไว้ให้ daีshboardเรียกใช้
+  async getOverdueProjects() {
+    return this.prisma.project.findMany({
+      where: {
+        dueDate: { lt: new Date() },
+        status: { not: ProjectStatus.COMPLETED }
+      },
+      select: projectSelect
     });
   }
 }

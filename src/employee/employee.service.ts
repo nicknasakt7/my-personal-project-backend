@@ -58,8 +58,16 @@ export class EmployeeService {
   }
 
   //Find by Email for login
-  async findbyEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email } });
+  async findByEmail(email: string): Promise<User | null> {
+    console.log('FIND EMAIL:', email);
+
+    const user = await this.prisma.user.findUnique({
+      where: { email }
+    });
+
+    console.log('FOUND USER:', user);
+
+    return user;
   }
 
   //Change password
@@ -97,7 +105,14 @@ export class EmployeeService {
   }
 
   // Get all employee and implement search page liit filter(role status level)
-  async getAllEmployees(query: GetEmployeeQueryDto): Promise<User[]> {
+  async getAllEmployees(query: GetEmployeeQueryDto): Promise<{
+    employees: EmployeeResponseDto[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+    };
+  }> {
     const {
       search,
       role,
@@ -151,23 +166,35 @@ export class EmployeeService {
       where.level = level;
     }
 
-    return this.prisma.user.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc'
+    const [employees, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.prisma.user.count({ where })
+    ]);
+
+    return {
+      employees: employees,
+      meta: {
+        total,
+        page,
+        limit
       }
-    });
+    };
   }
   //getEmployeeDetail
   async getEmployeeDetail(id: string): Promise<EmployeeResponseDto> {
     const employee = await this.prisma.user.findUnique({
       where: { id }
     });
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
+    if (!employee)
+      throw new NotFoundException({
+        message: 'Employee not found',
+        code: 'EMPLOYEE_NOT_FOUND'
+      });
     return employee;
   }
 
@@ -175,37 +202,47 @@ export class EmployeeService {
     const employee = await this.prisma.user.findUnique({
       where: { id }
     });
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
+    if (!employee)
+      throw new NotFoundException({
+        message: 'Employee not found',
+        code: 'EMPLOYEE_NOT_FOUND'
+      });
     return employee;
   }
 
   //Admin Update employee
   async updateEmployee(
-    id: string,
+    employeeId: string,
     updateEmployeeDto: UpdateEmployeeDto
   ): Promise<EmployeeResponseDto> {
     const employee = await this.prisma.user.update({
-      where: { id },
+      where: { id: employeeId },
       data: updateEmployeeDto
     });
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
+    if (!employee)
+      throw new NotFoundException({
+        message: 'Employee not found',
+        code: 'EMPLOYEE_NOT_FOUND'
+      });
     return employee;
   }
 
   //Admin Delete Employee
   async deleteEmployee(id: string): Promise<void> {
-    await this.prisma.user.delete({ where: { id } });
+    const employee = await this.prisma.user.findFirst({
+      where: {
+        id,
+        deletedAt: null
+      }
+    });
+    if (!employee)
+      throw new NotFoundException({
+        message: 'Employee not found',
+        code: 'EMPLOYEE_NOT_FOUND'
+      });
+    await this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: new Date() }
+    });
   }
-
-  // //Update Password
-  // async changePassword(
-  //   @CurrentUser('sub') id: string,
-  //   @Body() changePasswordDto: ChangePasswordDto
-  // ): Promise<void> {
-  //   await this.prisma.user.findUnique({ where: { id } });
-  // }
 }
