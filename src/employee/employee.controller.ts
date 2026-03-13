@@ -12,6 +12,7 @@ import {
   Post,
   Query,
   SerializeOptions,
+  UploadedFile,
   UseInterceptors
 } from '@nestjs/common';
 
@@ -30,6 +31,7 @@ import { ChangePasswordDto } from './dtos/change-password.dto';
 import { Roles } from 'src/auth/decorators/roles-decorator';
 import { CurrentUserRole } from 'src/auth/decorators/current-user-role.decorator';
 import { RoleType } from 'src/database/generate/database/prisma/enums';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('employees')
 export class EmployeeController {
@@ -74,17 +76,14 @@ export class EmployeeController {
     return this.employeeService.getEmployeeProfile(user.sub);
   }
 
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    type: EmployeeResponseDto,
-    excludeExtraneousValues: true
-  })
-  @Get(':id')
-  async getEmployeeDetail(
-    @Param('id', ParseUUIDPipe) id: string
-  ): Promise<EmployeeResponseDto> {
-    return this.employeeService.getEmployeeDetail(id);
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(
+    @CurrentUser() user: JwtPayload,
+    @CurrentUserRole() role: RoleType,
+    @UploadedFile() file: Express.Multer.File
+  ): Promise<string> {
+    return this.employeeService.uploadAvatar(user.sub, role, file);
   }
 
   @Roles('ADMIN', 'EMPLOYEE')
@@ -108,6 +107,19 @@ export class EmployeeController {
     @Body() changePasswordDto: ChangePasswordDto
   ): Promise<void> {
     await this.employeeService.changePassword(user.sub, changePasswordDto);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    type: EmployeeResponseDto,
+    excludeExtraneousValues: true
+  })
+  @Get(':id')
+  async getEmployeeDetail(
+    @Param('id', ParseUUIDPipe) id: string
+  ): Promise<EmployeeResponseDto> {
+    return this.employeeService.getEmployeeDetail(id);
   }
 
   @Roles('ADMIN')

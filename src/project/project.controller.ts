@@ -61,10 +61,10 @@ export class ProjectController {
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')
-  @Patch(':id')
+  @Patch(':projectId')
   async updateProject(
     @CurrentUser() user: JwtPayload,
-    @Param('id', ParseUUIDPipe) projectId: string,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
     @Body() updateProjectDto: UpdateProjectDto
   ): Promise<ProjectResponseDto> {
     return this.projectService.updateProject(

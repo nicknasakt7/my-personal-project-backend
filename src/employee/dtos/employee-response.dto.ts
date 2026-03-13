@@ -40,6 +40,10 @@ export class EmployeeResponseDto {
   profileImageUrl: string | null;
 
   @Expose()
+  @ApiProperty({ nullable: true })
+  profileImagePublicId: string | null;
+
+  @Expose()
   @ApiProperty()
   roleType: RoleType;
 

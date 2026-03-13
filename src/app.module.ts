@@ -15,6 +15,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { TransfromInterceptor } from './common/interceptors/transform-interceptor';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { RoleGuard } from './auth/guards/role.guard';
+import { UploadModule } from './shared/upload/upload.module';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { RoleGuard } from './auth/guards/role.guard';
     ProjectModule,
     TaskModule,
     CommentModule,
-    DashboardModule
+    DashboardModule,
+    UploadModule
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

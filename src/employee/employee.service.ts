@@ -24,12 +24,14 @@ import { GetEmployeeQueryDto } from './dtos/get-employee-query.dto';
 import { EmployeeResponseDto } from './dtos/employee-response.dto';
 
 import { UpdateEmployeeDto } from './dtos/employee-update.dto.';
+import { CloudinaryService } from 'src/shared/upload/cloudinary.service';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly bcryptService: BcryptService
+    private readonly bcryptService: BcryptService,
+    private readonly cloudinaryService: CloudinaryService
   ) {}
 
   //Create Admin by super admin
@@ -97,8 +99,6 @@ export class EmployeeService {
     const user = await this.prisma.user.findUnique({
       where: { email }
     });
-
-    console.log('FOUND USER:', user);
 
     return user;
   }
@@ -241,6 +241,33 @@ export class EmployeeService {
         code: 'EMPLOYEE_NOT_FOUND'
       });
     return employee;
+  }
+
+  async uploadAvatar(
+    currentUserId: string,
+    role: RoleType,
+    file: Express.Multer.File
+  ): Promise<string> {
+    const employee = await this.prisma.user.findFirst({
+      where: { id: currentUserId, deletedAt: null }
+    });
+
+    if (!employee) {
+      throw new NotFoundException({
+        message: 'Employee not found',
+        code: 'EMPLOYEE_NOT_FOUND'
+      });
+    }
+    if (employee?.profileImagePublicId) {
+      await this.cloudinaryService.delete(employee.profileImagePublicId);
+    }
+    const result = await this.cloudinaryService.upload(file);
+
+    await this.updateEmployee(currentUserId, {
+      profileImageUrl: result.secure_url,
+      profileImagePublicId: result.public_id
+    });
+    return result.secure_url;
   }
 
   //Admin Update employee

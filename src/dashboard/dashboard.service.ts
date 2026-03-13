@@ -8,6 +8,7 @@ import {
   ProjectStatus,
   TaskStatus
 } from 'src/database/generate/database/prisma/enums';
+import { TeamDistributionResponseDto } from './dtos/team-distribution-response.dto';
 
 @Injectable()
 export class DashboardService {
@@ -155,6 +156,25 @@ export class DashboardService {
         status
       };
     });
+    return { data };
+  }
+
+  async teamDistribution(): Promise<TeamDistributionResponseDto> {
+    const users = await this.prisma.user.groupBy({
+      by: ['position'],
+      _count: {
+        position: true
+      }
+    });
+
+    const total = users.reduce((sum, u) => sum + u._count.position, 0);
+
+    const data = users.map((u) => ({
+      role: u.position,
+      count: u._count.position,
+      percent: Math.round((u._count.position / total) * 100)
+    }));
+
     return { data };
   }
 }

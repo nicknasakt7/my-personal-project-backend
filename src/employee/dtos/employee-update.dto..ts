@@ -1,9 +1,13 @@
-import { PickType } from '@nestjs/swagger';
+import { PartialType, PickType } from '@nestjs/swagger';
 import { BaseEmployeeDto } from './base-employee.dto';
 
-export class UpdateEmployeeDto extends PickType(BaseEmployeeDto, [
-  'firstName',
-  'lastName',
-  'birthDate',
-  'gender'
-] as const) {}
+export class UpdateEmployeeDto extends PartialType(
+  PickType(BaseEmployeeDto, [
+    'firstName',
+    'lastName',
+    'birthDate',
+    'gender',
+    'profileImageUrl',
+    'profileImagePublicId'
+  ] as const)
+) {}

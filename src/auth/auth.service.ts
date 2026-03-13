@@ -18,9 +18,8 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
-    console.log('STEP 1');
     const user = await this.employeeService.findByEmail(loginDto.email);
-    console.log('STEP 2', user?.email);
+
     if (!user)
       throw new UnauthorizedException({
         message: 'The provided email or password is incorrect',
@@ -31,7 +30,7 @@ export class AuthService {
       loginDto.password,
       user.password
     );
-    console.log('STEP 3', isMatch);
+
     if (!isMatch)
       throw new UnauthorizedException({
         message: 'The provided email or password is incorrect',
@@ -43,15 +42,11 @@ export class AuthService {
       roleType: user.roleType
     };
     const accessToken = await this.authTokenService.sign(payload);
-    console.log('STEP 4 TOKEN CREATED');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = user;
 
-    const response: LoginResponseDto = {
+    return {
       accessToken,
-      user: rest,
+      user,
       expiresIn: this.typeConfigService.get('JWT_EXPIRES_IN')
     };
-    return response;
   }
 }

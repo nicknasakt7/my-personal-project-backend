@@ -46,11 +46,11 @@ export class BaseEmployeeDto {
 
   @IsOptional()
   @IsString()
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
 
   @IsOptional()
   @IsString()
-  profileImagePublicId?: string;
+  profileImagePublicId?: string | null;
 
   @IsEnum(RoleType, {
     message: 'Role type must choose one of the options'
