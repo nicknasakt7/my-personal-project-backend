@@ -48,8 +48,8 @@ export class ProjectService {
     currentUserId: string,
     role: RoleType,
     query: GetProjectsQueryDto
-  ): Promise<ProjectResponseDto[]> {
-    const { month, year, search, status, createdBy } = query;
+  ): Promise<{ projects: ProjectResponseDto[]; meta: { total: number; page: number; limit: number } }> {
+    const { month, year, search, status, createdBy, limit = 12, page = 1 } = query;
 
     const where: Prisma.ProjectWhereInput = {};
 
@@ -85,14 +85,19 @@ export class ProjectService {
         lt: endDate
       };
     }
-    const projects = await this.prisma.project.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      select: projectSelect
-    });
-    return projects;
+
+    const [total, projects] = await Promise.all([
+      this.prisma.project.count({ where }),
+      this.prisma.project.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: projectSelect
+      })
+    ]);
+
+    return { projects, meta: { total, page, limit } };
   }
 
   //get project stats card and calc
@@ -157,27 +162,44 @@ export class ProjectService {
     projectId: string,
     updateProjectDto: UpdateProjectDto
   ): Promise<ProjectResponseDto> {
-    const project = await this.prisma.project.update({
+    const existing = await this.prisma.project.findFirst({
       where: { id: projectId, deletedAt: null },
+      select: { createdById: true }
+    });
+    if (!existing) throw new NotFoundException({ message: 'Project not found', code: 'PROJECT_NOT_FOUND' });
+    if (existing.createdById !== currentUserId) throw new ForbiddenException({ message: 'Only the project creator can edit', code: 'ACCESS_DENIED' });
+
+    return this.prisma.project.update({
+      where: { id: projectId },
       data: updateProjectDto,
       select: projectSelect
     });
-    if (project.createdById !== currentUserId) {
-      throw new ForbiddenException();
-    }
-    return project;
   }
 
   //cancel project by admin
   async cancelProject(projectId: string): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.update({
       where: { id: projectId, deletedAt: null },
-      data: {
-        status: ProjectStatus.CANCELED
-      },
+      data: { status: ProjectStatus.CANCELED },
       select: projectSelect
     });
     return project;
+  }
+
+  //restore canceled project by admin
+  async restoreProject(projectId: string): Promise<ProjectResponseDto> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, deletedAt: null }
+    });
+    if (!project) throw new NotFoundException({ message: 'Project not found', code: 'PROJECT_NOT_FOUND' });
+    if (project.status !== ProjectStatus.CANCELED) {
+      throw new Error('Only canceled projects can be restored');
+    }
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { status: ProjectStatus.ACTIVE },
+      select: projectSelect
+    });
   }
 
   //delete project by admin

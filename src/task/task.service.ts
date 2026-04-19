@@ -104,9 +104,80 @@ export class TaskService {
     };
   }
 
+  // personal tasks created by current user
+  async getPersonalTasks(
+    currentUserId: string,
+    query: GetTaskQueryDto
+  ): Promise<TaskListResponseDto> {
+    const { search, page = 1, limit = 10, status, priority } = query;
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
+
+    const where: Prisma.TaskWhereInput = {
+      deletedAt: null,
+      isPersonal: true,
+      createdById: currentUserId,
+    };
+
+    if (search) where.title = { contains: search, mode: 'insensitive' };
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+
+    const [tasks, total] = await Promise.all([
+      this.prisma.task.findMany({
+        where,
+        skip,
+        take: safeLimit,
+        orderBy: { createdAt: 'desc' },
+        select: taskListSelect
+      }),
+      this.prisma.task.count({ where })
+    ]);
+
+    return {
+      tasks,
+      meta: { total, page, limit, totalPages: Math.ceil(total / safeLimit) }
+    };
+  }
+
+  // tasks assigned to current user
+  async getMyTasks(
+    currentUserId: string,
+    query: GetTaskQueryDto
+  ): Promise<TaskListResponseDto> {
+    const { search, page = 1, limit = 10, status, priority } = query;
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
+
+    const where: Prisma.TaskWhereInput = {
+      deletedAt: null,
+      assignToId: currentUserId
+    };
+
+    if (search) where.title = { contains: search, mode: 'insensitive' };
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+
+    const [tasks, total] = await Promise.all([
+      this.prisma.task.findMany({
+        where,
+        skip,
+        take: safeLimit,
+        orderBy: { createdAt: 'desc' },
+        select: taskListSelect
+      }),
+      this.prisma.task.count({ where })
+    ]);
+
+    return {
+      tasks,
+      meta: { total, page, limit, totalPages: Math.ceil(total / safeLimit) }
+    };
+  }
+
   //task list
   async getAllTasks(query: GetTaskQueryDto): Promise<TaskListResponseDto> {
-    const { search, page = 1, limit = 10, status, priority, assignTo } = query;
+    const { search, page = 1, limit = 10, status, priority, assignTo, projectId } = query;
 
     const safeLimit = Math.min(limit, 50);
     const skip = (page - 1) * safeLimit;
@@ -129,6 +200,9 @@ export class TaskService {
     }
     if (assignTo) {
       where.assignToId = assignTo;
+    }
+    if (projectId) {
+      where.projectId = projectId;
     }
 
     const [tasks, total] = await Promise.all([
@@ -205,22 +279,7 @@ export class TaskService {
       });
     }
 
-    console.log(
-      ' task.assignToId !== currentUserId',
-      task.assignToId !== currentUserId
-    );
     //employeeไม่สามารถupdate taskที่adminเป็นคนสร้างและassign to employee
-    // if (role === RoleType.EMPLOYEE && task.assignToId !== currentUserId) {
-    //   throw new ForbiddenException({
-    //     message: 'You cannot update this task',
-    //     code: 'TASK_FORBIDDEN'
-    //   });
-    // }
-    // console.log(
-    //   '      task.createdById !== currentUserId',
-    //   task.createdById !== currentUserId
-    // );
-    // console.log(' task.isPersonal', task.isPersonal);
 
     //employeeไม่สามารถupdate taskคนอื่นได้
     if (role === RoleType.EMPLOYEE && task.createdById !== currentUserId) {
@@ -265,7 +324,8 @@ export class TaskService {
     }
     if (
       role === RoleType.EMPLOYEE &&
-      updateTaskDto.status === TaskStatus.DONE
+      updateTaskDto.status === TaskStatus.DONE &&
+      !task.isPersonal
     ) {
       throw new UnauthorizedException({
         message: 'Employee cannot set task to DONE',
@@ -380,7 +440,6 @@ export class TaskService {
     const comments = await this.prisma.comment.findMany({
       where: {
         taskId,
-        deletedAt: null
       },
 
       orderBy: {

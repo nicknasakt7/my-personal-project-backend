@@ -14,6 +14,7 @@ export class GlobalValidationPipe extends ValidationPipe {
           },
           {}
         );
+
         throw new BadRequestException({
           message: 'The provided data is invalid',
           code: 'VALIDATION_ERROR',

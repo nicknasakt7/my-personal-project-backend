@@ -3,10 +3,12 @@ export const commentSelect = {
   content: true,
   createdAt: true,
   updatedAt: true,
+  deletedAt: true,
   user: {
     select: {
       id: true,
-      email: true
+      firstName: true,
+      lastName: true,
     }
   }
 };

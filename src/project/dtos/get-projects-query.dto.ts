@@ -1,5 +1,6 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
@@ -39,10 +40,21 @@ export class GetProjectsQueryDto {
   limit?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
   @IsEnum(ProjectStatus)
   status: ProjectStatus;
 
   @IsOptional()
   @IsString()
   createdBy?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  isOverdue?: boolean;
 }

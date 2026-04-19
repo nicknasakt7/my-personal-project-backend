@@ -42,7 +42,7 @@ export class ProjectController {
     @CurrentUser() user: JwtPayload,
     @CurrentUserRole() role: RoleType,
     @Query() query: GetProjectsQueryDto
-  ): Promise<ProjectResponseDto[]> {
+  ): Promise<{ projects: ProjectResponseDto[]; meta: { total: number; page: number; limit: number } }> {
     return this.projectService.getAllProjects(user.sub, role, query);
   }
 
@@ -80,6 +80,14 @@ export class ProjectController {
     @Param('id', ParseUUIDPipe) projectId: string
   ): Promise<ProjectResponseDto> {
     return this.projectService.cancelProject(projectId);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Patch(':id/restore')
+  async restoreProject(
+    @Param('id', ParseUUIDPipe) projectId: string
+  ): Promise<ProjectResponseDto> {
+    return this.projectService.restoreProject(projectId);
   }
 
   @Roles('SUPER_ADMIN')

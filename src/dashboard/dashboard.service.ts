@@ -116,6 +116,7 @@ export class DashboardService {
       where: {
         status: ProjectStatus.ACTIVE
       },
+      take: 10,
       include: {
         tasks: {
           where: {

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 import { AuthModule } from './auth/auth.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -19,8 +21,10 @@ import { UploadModule } from './shared/upload/upload.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule,
     DatabaseModule,
+    SchedulerModule,
     AuthModule,
     EmployeeModule,
     SecurityModule,

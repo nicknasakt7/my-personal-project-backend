@@ -6,10 +6,31 @@ export const projectSelect = {
   dueDate: true,
   projectMembers: {
     select: {
-      userId: true
+      userId: true,
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          position: true,
+          profileImageUrl: true,
+        },
+      },
+    },
+  },
+  _count: {
+    select: {
+      tasks: true
     }
   },
   createdById: true,
+  createdBy: {
+    select: {
+      firstName: true,
+      lastName: true,
+      position: true,
+      profileImageUrl: true,
+    },
+  },
   createdAt: true,
   updatedAt: true
 };

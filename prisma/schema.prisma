@@ -37,6 +37,7 @@ enum EmploymentStatus {
 enum ProjectStatus {
   ACTIVE
   COMPLETED
+  OVERDUE
   CANCELED
 }
 
@@ -51,6 +52,7 @@ enum TaskStatus {
   IN_PROGRESS
   IN_REVIEW
   DONE
+  OVERDUE
   CANCELED
 }
 
@@ -111,6 +113,8 @@ model User {
   comments        Comment[]
   projectMembers  ProjectMember[]
 
+  passwordResetTokens PasswordResetToken[]
+
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz()
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -118,6 +122,18 @@ model User {
 
   @@index([createdById])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at") @db.Timestamptz()
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Project {

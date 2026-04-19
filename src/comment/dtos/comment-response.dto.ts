@@ -15,8 +15,12 @@ export class CommentResponseDto {
   updatedAt: Date;
 
   @Expose()
+  deletedAt: Date | null;
+
+  @Expose()
   user: {
     id: string;
-    email: string;
+    firstName: string;
+    lastName: string;
   };
 }

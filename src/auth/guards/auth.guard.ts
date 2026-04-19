@@ -9,12 +9,14 @@ import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { AuthTokenService } from 'src/shared/security/auth-token.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly authTokenService: AuthTokenService,
-    private readonly reflector: Reflector
+    private readonly reflector: Reflector,
+    private readonly prisma: PrismaService
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(
@@ -33,8 +35,25 @@ export class AuthGuard implements CanActivate {
 
     try {
       const payload = await this.authTokenService.verify(token);
+
+      const user = await this.prisma.user.findFirst({
+        where: { id: payload.sub, deletedAt: null, status: 'ACTIVE' }
+      });
+
+      if (!user)
+        throw new UnauthorizedException({
+          message: 'Account is inactive or has been removed',
+          code: 'ACCOUNT_INACTIVE'
+        });
+
       request.user = payload;
     } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      )
+        throw error;
+
       if (error instanceof Error && error.name === 'JsonWebTokenError')
         throw new UnauthorizedException({
           message: 'Invalid token',
@@ -46,6 +65,7 @@ export class AuthGuard implements CanActivate {
           message: 'Token has expired',
           code: 'TOKEN_EXPIRED'
         });
+
       throw error;
     }
 

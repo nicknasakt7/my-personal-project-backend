@@ -52,6 +52,15 @@ export class EmployeeController {
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')
+  @Post('create')
+  createEmployee(
+    @CurrentUserRole() role: RoleType,
+    @Body() createEmployeeDto: CreateEmployeeDto
+  ): Promise<EmployeeResponseDto> {
+    return this.employeeService.createEmployee(role, createEmployeeDto);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     type: GetAllEmployeeResponseDto,
@@ -86,6 +95,16 @@ export class EmployeeController {
     return this.employeeService.uploadAvatar(user.sub, role, file);
   }
 
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Post(':id/avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatarByAdmin(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File
+  ): Promise<string> {
+    return this.employeeService.uploadAvatarByAdmin(id, file);
+  }
+
   @Roles('ADMIN', 'EMPLOYEE')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
@@ -107,6 +126,14 @@ export class EmployeeController {
     @Body() changePasswordDto: ChangePasswordDto
   ): Promise<void> {
     await this.employeeService.changePassword(user.sub, changePasswordDto);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Get(':id/summary')
+  async getEmployeeSummary(
+    @Param('id', ParseUUIDPipe) id: string
+  ) {
+    return this.employeeService.getEmployeeSummary(id);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')

@@ -56,6 +56,26 @@ export class TaskController {
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: TaskListResponseDto, excludeExtraneousValues: true })
+  @Get('personal')
+  async getPersonalTasks(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: GetTaskQueryDto
+  ): Promise<TaskListResponseDto> {
+    return this.taskService.getPersonalTasks(user.sub, query);
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: TaskListResponseDto, excludeExtraneousValues: true })
+  @Get('my')
+  async getMyTasks(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: GetTaskQueryDto
+  ): Promise<TaskListResponseDto> {
+    return this.taskService.getMyTasks(user.sub, query);
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     type: TaskListResponseDto,
     excludeExtraneousValues: true
@@ -148,7 +168,7 @@ export class TaskController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
-    type: CommentResponseDto,
+    type: CommentPaginationDto,
     excludeExtraneousValues: true
   })
   @Get(':taskId/comments')
@@ -160,4 +180,19 @@ export class TaskController {
   ): Promise<CommentPaginationDto> {
     return this.taskService.getCommentByTask(user.sub, role, taskId, query);
   }
+
+  //   @Get(':taskId/detail')
+  //   async getEmployeeDetail(@Param('taskId', ParseUUIDPipe) id: string): Promise<{
+  //     employee: EmployeeResponseDto;
+  //     stats: {
+  //       total: number;
+  //       todo: number;
+  //       inprogress: number;
+  //       done: number;
+  //     };
+  //     projects: ProjectResponseDto[];
+  //     recentTasks: ResponseTaskDto[];
+  //   }> {
+  //     return this.employeeService.getEmployeeDetailPage(taskId);
+  //   }
 }

@@ -21,9 +21,9 @@ export class CreateTaskDto {
   title: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @Trim()
-  description: string;
+  description?: string;
 
   @IsEnum(TaskPriority)
   @IsNotEmpty()
