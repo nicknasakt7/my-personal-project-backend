@@ -217,7 +217,7 @@ export class EmployeeService {
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.UserWhereInput = {};
+    const where: Prisma.UserWhereInput = { deletedAt: null };
 
     if (search) {
       where.OR = [
@@ -419,18 +419,24 @@ export class EmployeeService {
   //Admin Update employee
   async updateEmployee(
     employeeId: string,
-    updateEmployeeDto: UpdateEmployeeDto
+    updateEmployeeDto: UpdateEmployeeDto,
+    callerRole?: RoleType
   ): Promise<EmployeeResponseDto> {
-    const employee = await this.prisma.user.update({
-      where: { id: employeeId },
-      data: updateEmployeeDto
-    });
-    if (!employee)
+    const target = await this.prisma.user.findUnique({ where: { id: employeeId } });
+    if (!target)
       throw new NotFoundException({
         message: 'Employee not found',
         code: 'EMPLOYEE_NOT_FOUND'
       });
-    return employee;
+
+    if (callerRole === RoleType.ADMIN && target.roleType !== RoleType.EMPLOYEE) {
+      throw new ForbiddenException('ADMIN can only edit EMPLOYEE profiles');
+    }
+
+    return this.prisma.user.update({
+      where: { id: employeeId },
+      data: updateEmployeeDto
+    });
   }
 
   //Admin Delete Employee

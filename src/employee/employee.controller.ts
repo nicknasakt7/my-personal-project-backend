@@ -149,7 +149,7 @@ export class EmployeeController {
     return this.employeeService.getEmployeeDetail(id);
   }
 
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     type: EmployeeResponseDto,
@@ -161,7 +161,7 @@ export class EmployeeController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto
   ): Promise<EmployeeResponseDto> {
-    return this.employeeService.updateEmployee(id, updateEmployeeDto);
+    return this.employeeService.updateEmployee(id, updateEmployeeDto, user.roleType);
   }
 
   @Roles('SUPER_ADMIN')

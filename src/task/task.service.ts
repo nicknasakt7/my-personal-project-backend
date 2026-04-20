@@ -22,10 +22,15 @@ import { GetTaskQueryDto } from './dtos/get-task-query.dto';
 import { Prisma } from 'src/database/generate/database/prisma/client';
 import { TaskListResponseDto } from './dtos/task-list-response.dto';
 import { taskListSelect } from './select/task-list.select';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/database/generate/database/prisma/enums';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   //CreateTaskbyAdmin
   async createTask(
@@ -63,6 +68,16 @@ export class TaskService {
       },
       select: taskDetailSelect
     });
+    if (assignToId && assignToId !== currentUserId) {
+      this.notificationService.createNotification({
+        userId: assignToId,
+        type: NotificationType.TASK_ASSIGNED,
+        title: 'New task assigned to you',
+        body: `You have been assigned to "${task.title}"`,
+        taskId: task.id,
+      }).catch(() => {});
+    }
+
     if (createTaskDto.projectId) {
       this.prisma.projectMember
         .upsert({
@@ -151,7 +166,8 @@ export class TaskService {
 
     const where: Prisma.TaskWhereInput = {
       deletedAt: null,
-      assignToId: currentUserId
+      assignToId: currentUserId,
+      isPersonal: false,
     };
 
     if (search) where.title = { contains: search, mode: 'insensitive' };
@@ -177,7 +193,7 @@ export class TaskService {
 
   //task list
   async getAllTasks(query: GetTaskQueryDto): Promise<TaskListResponseDto> {
-    const { search, page = 1, limit = 10, status, priority, assignTo, projectId } = query;
+    const { search, page = 1, limit = 10, status, priority, assignTo, projectId, createdBy } = query;
 
     const safeLimit = Math.min(limit, 50);
     const skip = (page - 1) * safeLimit;
@@ -203,6 +219,10 @@ export class TaskService {
     }
     if (projectId) {
       where.projectId = projectId;
+    }
+    if (createdBy) {
+      where.createdById = createdBy;
+      where.isPersonal = false;
     }
 
     const [tasks, total] = await Promise.all([
@@ -294,6 +314,16 @@ export class TaskService {
       data: updateTaskDto,
       select: taskDetailSelect
     });
+
+    if (updateTaskDto.assignToId && updateTaskDto.assignToId !== task.assignToId) {
+      this.notificationService.createNotification({
+        userId: updateTaskDto.assignToId,
+        type: NotificationType.TASK_ASSIGNED,
+        title: 'Task assigned to you',
+        body: `You have been assigned to "${task.title}"`,
+        taskId: task.id,
+      }).catch(() => {});
+    }
 
     return updatedTask;
   }
@@ -477,6 +507,7 @@ export class TaskService {
       where: { id: taskId, deletedAt: null },
       select: {
         id: true,
+        title: true,
         projectId: true,
         assignToId: true,
         createdById: true,
@@ -525,6 +556,37 @@ export class TaskService {
       },
       select: commentSelect
     });
+
+    const taskTitle = task.title ?? 'a task';
+    const notified = new Set<string>([currentUserId]);
+
+    if (task.assignToId !== currentUserId) {
+      notified.add(task.assignToId);
+      this.notificationService.createNotification({
+        userId: task.assignToId,
+        type: NotificationType.TASK_COMMENT,
+        title: 'New comment on your task',
+        body: `Someone commented on "${taskTitle}"`,
+        taskId,
+      }).catch(() => {});
+    }
+
+    const prevCommenters = await this.prisma.comment.findMany({
+      where: { taskId, deletedAt: null, userId: { notIn: [...notified] } },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    for (const { userId } of prevCommenters) {
+      notified.add(userId);
+      this.notificationService.createNotification({
+        userId,
+        type: NotificationType.COMMENT_REPLY,
+        title: 'New comment on a task you follow',
+        body: `New activity on "${taskTitle}"`,
+        taskId,
+      }).catch(() => {});
+    }
 
     return comment;
   }

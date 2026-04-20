@@ -7,6 +7,9 @@ export class UpdateEmployeeDto extends PartialType(
     'lastName',
     'birthDate',
     'gender',
+    'position',
+    'level',
+    'status',
     'profileImageUrl',
     'profileImagePublicId'
   ] as const)

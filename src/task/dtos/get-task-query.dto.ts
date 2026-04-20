@@ -37,4 +37,8 @@ export class GetTaskQueryDto {
   @IsOptional()
   @IsUUID()
   projectId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  createdBy?: string;
 }

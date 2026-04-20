@@ -12,6 +12,7 @@ import { ProjectModule } from './project/project.module';
 import { TaskModule } from './task/task.module';
 import { CommentModule } from './comment/comment.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { NotificationModule } from './notification/notification.module';
 import { EmployeeModule } from './employee/employee.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { TransfromInterceptor } from './common/interceptors/transform-interceptor';
@@ -32,7 +33,8 @@ import { UploadModule } from './shared/upload/upload.module';
     TaskModule,
     CommentModule,
     DashboardModule,
-    UploadModule
+    UploadModule,
+    NotificationModule
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },
