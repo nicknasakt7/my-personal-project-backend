@@ -130,9 +130,7 @@ export class EmployeeController {
 
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Get(':id/summary')
-  async getEmployeeSummary(
-    @Param('id', ParseUUIDPipe) id: string
-  ) {
+  async getEmployeeSummary(@Param('id', ParseUUIDPipe) id: string) {
     return this.employeeService.getEmployeeSummary(id);
   }
 
@@ -161,7 +159,11 @@ export class EmployeeController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto
   ): Promise<EmployeeResponseDto> {
-    return this.employeeService.updateEmployee(id, updateEmployeeDto, user.roleType);
+    return this.employeeService.updateEmployee(
+      id,
+      updateEmployeeDto,
+      user.roleType
+    );
   }
 
   @Roles('SUPER_ADMIN')

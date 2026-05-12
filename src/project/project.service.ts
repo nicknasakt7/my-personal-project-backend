@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException
 } from '@nestjs/common';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { ProjectResponseDto } from './dtos/project-response.dto';
+import { GetAllProjectsResponseDto } from './dtos/get-all-projects-response.dto';
 import { PrismaService } from 'src/database/prisma.service';
 import { projectSelect } from './selects/project.select';
 import { GetProjectsQueryDto } from './dtos/get-projects-query.dto';
@@ -48,8 +50,16 @@ export class ProjectService {
     currentUserId: string,
     role: RoleType,
     query: GetProjectsQueryDto
-  ): Promise<{ projects: ProjectResponseDto[]; meta: { total: number; page: number; limit: number } }> {
-    const { month, year, search, status, createdBy, limit = 12, page = 1 } = query;
+  ): Promise<GetAllProjectsResponseDto> {
+    const {
+      month,
+      year,
+      search,
+      status,
+      createdBy,
+      limit = 12,
+      page = 1
+    } = query;
 
     const where: Prisma.ProjectWhereInput = {};
 
@@ -166,8 +176,16 @@ export class ProjectService {
       where: { id: projectId, deletedAt: null },
       select: { createdById: true }
     });
-    if (!existing) throw new NotFoundException({ message: 'Project not found', code: 'PROJECT_NOT_FOUND' });
-    if (existing.createdById !== currentUserId) throw new ForbiddenException({ message: 'Only the project creator can edit', code: 'ACCESS_DENIED' });
+    if (!existing)
+      throw new NotFoundException({
+        message: 'Project not found',
+        code: 'PROJECT_NOT_FOUND'
+      });
+    if (existing.createdById !== currentUserId)
+      throw new ForbiddenException({
+        message: 'Only the project creator can edit',
+        code: 'ACCESS_DENIED'
+      });
 
     return this.prisma.project.update({
       where: { id: projectId },
@@ -191,9 +209,16 @@ export class ProjectService {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, deletedAt: null }
     });
-    if (!project) throw new NotFoundException({ message: 'Project not found', code: 'PROJECT_NOT_FOUND' });
+    if (!project)
+      throw new NotFoundException({
+        message: 'Project not found',
+        code: 'PROJECT_NOT_FOUND'
+      });
     if (project.status !== ProjectStatus.CANCELED) {
-      throw new Error('Only canceled projects can be restored');
+      throw new BadRequestException({
+        message: 'Only canceled projects can be restored',
+        code: 'INVALID_PROJECT_STATUS'
+      });
     }
     return this.prisma.project.update({
       where: { id: projectId },

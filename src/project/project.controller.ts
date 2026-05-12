@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -9,11 +10,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Query
+  Query,
+  SerializeOptions,
+  UseInterceptors
 } from '@nestjs/common';
 import { CreateProjectDto } from './dtos/create-project.dto';
-
 import { ProjectResponseDto } from './dtos/project-response.dto';
+import { GetAllProjectsResponseDto } from './dtos/get-all-projects-response.dto';
 import { ProjectService } from './project.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/types/jwt-payload.type';
@@ -28,6 +31,8 @@ import { ProjectStatsResponseDto } from './dtos/project-stat-response.dto';
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: ProjectResponseDto, excludeExtraneousValues: true })
   @Post()
   @Roles('ADMIN', 'SUPER_ADMIN')
   async createProject(
@@ -37,12 +42,17 @@ export class ProjectController {
     return this.projectService.createProject(createProjectDto, user.sub);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    type: GetAllProjectsResponseDto,
+    excludeExtraneousValues: true
+  })
   @Get()
   async getAllProjects(
     @CurrentUser() user: JwtPayload,
     @CurrentUserRole() role: RoleType,
     @Query() query: GetProjectsQueryDto
-  ): Promise<{ projects: ProjectResponseDto[]; meta: { total: number; page: number; limit: number } }> {
+  ): Promise<GetAllProjectsResponseDto> {
     return this.projectService.getAllProjects(user.sub, role, query);
   }
 
@@ -51,6 +61,8 @@ export class ProjectController {
     return this.projectService.getProjectStats();
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: ProjectResponseDto, excludeExtraneousValues: true })
   @Get(':id')
   async getProjectDetail(
     @CurrentUser() user: JwtPayload,
@@ -60,6 +72,8 @@ export class ProjectController {
     return this.projectService.getProjectDetail(user.sub, role, projectId);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: ProjectResponseDto, excludeExtraneousValues: true })
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':projectId')
   async updateProject(
@@ -74,6 +88,8 @@ export class ProjectController {
     );
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: ProjectResponseDto, excludeExtraneousValues: true })
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id/status')
   async cancelProject(
@@ -82,6 +98,8 @@ export class ProjectController {
     return this.projectService.cancelProject(projectId);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({ type: ProjectResponseDto, excludeExtraneousValues: true })
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id/restore')
   async restoreProject(

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -58,6 +59,19 @@ export class TaskService {
       }
       assignToId = currentUserId;
       createTaskDto.projectId = null;
+    }
+
+    if (createTaskDto.projectId && createTaskDto.dueDate) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: createTaskDto.projectId },
+        select: { dueDate: true },
+      });
+      if (project?.dueDate && createTaskDto.dueDate > project.dueDate) {
+        throw new BadRequestException({
+          message: 'Task due date cannot exceed project due date',
+          code: 'TASK_DUEDATE_EXCEEDS_PROJECT',
+        });
+      }
     }
 
     const task = await this.prisma.task.create({
@@ -297,6 +311,19 @@ export class TaskService {
         message: 'Task not found',
         code: 'TASK_NOT_FOUND'
       });
+    }
+
+    if (updateTaskDto.dueDate && task.projectId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: task.projectId },
+        select: { dueDate: true },
+      });
+      if (project?.dueDate && updateTaskDto.dueDate > project.dueDate) {
+        throw new BadRequestException({
+          message: 'Task due date cannot exceed project due date',
+          code: 'TASK_DUEDATE_EXCEEDS_PROJECT',
+        });
+      }
     }
 
     //employeeไม่สามารถupdate taskที่adminเป็นคนสร้างและassign to employee

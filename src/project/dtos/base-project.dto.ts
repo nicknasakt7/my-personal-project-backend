@@ -28,14 +28,4 @@ export class BaseProjectDto {
   @IsString({ message: 'Created by id must be a string' })
   @IsNotEmpty({ message: 'Created by id is required' })
   createdById: string;
-
-  @IsNotEmpty({ message: 'created at is required' })
-  @IsDate({ message: 'Invalid date' })
-  @Type(() => Date)
-  createdAt: Date;
-
-  @IsNotEmpty({ message: 'updared at is required' })
-  @IsDate({ message: 'Invalid date' })
-  @Type(() => Date)
-  updatedAt: Date;
 }
