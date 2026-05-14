@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException
+} from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 import { BcryptService } from 'src/shared/security/services/bcrypt.service';
 import { TypeConfigService } from 'src/config/type-config.service';
@@ -28,7 +32,10 @@ export class AuthService {
         code: 'INVALID_CREDENTIALS'
       });
 
-    const isMatch = await this.bcryptService.compare(loginDto.password, user.password);
+    const isMatch = await this.bcryptService.compare(
+      loginDto.password,
+      user.password
+    );
 
     if (!isMatch)
       throw new UnauthorizedException({
@@ -36,7 +43,11 @@ export class AuthService {
         code: 'INVALID_CREDENTIALS'
       });
 
-    const payload = { sub: user.id, email: user.email, roleType: user.roleType };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      roleType: user.roleType
+    };
     const accessToken = await this.authTokenService.sign(payload);
 
     return {
@@ -55,7 +66,9 @@ export class AuthService {
     if (!user) return;
 
     // Remove any existing tokens for this user
-    await this.prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+    await this.prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id }
+    });
 
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -88,14 +101,22 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const resetToken = await this.prisma.passwordResetToken.findUnique({ where: { token } });
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token }
+    });
 
     if (!resetToken)
-      throw new BadRequestException({ message: 'Invalid or expired reset link', code: 'INVALID_TOKEN' });
+      throw new BadRequestException({
+        message: 'Invalid or expired reset link',
+        code: 'INVALID_TOKEN'
+      });
 
     if (resetToken.expiresAt < new Date()) {
       await this.prisma.passwordResetToken.delete({ where: { token } });
-      throw new BadRequestException({ message: 'Reset link has expired. Please request a new one.', code: 'TOKEN_EXPIRED' });
+      throw new BadRequestException({
+        message: 'Reset link has expired. Please request a new one.',
+        code: 'TOKEN_EXPIRED'
+      });
     }
 
     const hashedPassword = await this.bcryptService.hash(newPassword);
